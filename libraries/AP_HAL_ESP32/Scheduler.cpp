@@ -23,7 +23,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "rtc_wdt.h"
 #include "esp_task_wdt.h"
 
 #include <AP_HAL/AP_HAL.h>
