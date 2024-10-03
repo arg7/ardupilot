@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Charles Villard
+ * Code by Charles Villard, ARg and Bayu Laksono
  */
 
 #pragma once
@@ -23,21 +23,18 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 
-#if HAL_USE_ADC
-
-//&& !defined(HAL_DISABLE_ADC_DRIVER)
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
 #define ANALOG_MAX_CHANNELS 8
 
 namespace ESP32
 {
 
-
 class AnalogSource : public AP_HAL::AnalogSource
 {
 public:
     friend class AnalogIn;
-    AnalogSource( adc_oneshot_unit_handle_t adc_handle, int16_t ardupin, adc_channel_t channel, float scaler, float initial_value, adc_unit_t unit);
+    AnalogSource(int16_t ardupin, adc_channel_t adc_channel, float scaler, float initial_value);
     float read_average() override;
     float read_latest() override;
     bool set_pin(uint8_t p) override;
@@ -48,23 +45,19 @@ public:
     void set_settle_time(uint16_t settle_time_ms) {}
 
 private:
-
-    adc_oneshot_unit_handle_t _adc_handle;
-    adc_cali_handle_t _adc_cali_handle;
-
     //ADC number (1 or 2). ADC2 is unavailable when WIFI on
-    adc_unit_t _unit;
+    adc_unit_t _adc_unit;
 
-    //adc Pin number (1-8)
-    // gpio-adc lower level pin name
-    adc_channel_t _channel;
+    //ADC channel
+    adc_channel_t _adc_channel;
 
     //human readable Pin number used in ardu params
     int16_t _ardupin;
     //scaling from ADC count to Volts
     int16_t _scaler;
-    // gpio pin number on esp32:
-    gpio_num_t _gpio;
+    //ADC handle
+    adc_oneshot_unit_handle_t _adc_handle;
+    adc_cali_handle_t _adc_cali_handle;
 
     //Current computed value (average)
     float _value;
@@ -75,9 +68,9 @@ private:
     //Sum of fetched values
     float _sum_value;
 
+    bool adc_init();
+    float adc_read();
     void _add_value();
-
-    int adc_read();
 
     HAL_Semaphore _semaphore;
 };
@@ -89,13 +82,11 @@ public:
 
     void init() override;
     AP_HAL::AnalogSource* channel(int16_t pin) override;
-    void _timer_tick(void);
-    void timer_tick_adc(uint8_t index);
-    float board_voltage(void) override { return _board_voltage; }
-    float servorail_voltage(void) override { return _servorail_voltage; }
-    uint16_t power_status_flags(void) override { return _power_flags; }
-    uint16_t accumulated_power_status_flags(void) const override { return _accumulated_power_flags; }
-
+    void _timer_tick();
+    float board_voltage() override
+    {
+        return _board_voltage;
+    }
     static int8_t find_pinconfig(int16_t ardupin);
 
 private:
@@ -103,21 +94,14 @@ private:
 
     uint32_t _last_run;
     float _board_voltage;
-    float _servorail_voltage;
-    float _rssi_voltage;
-    uint16_t _power_flags;
-    uint16_t _accumulated_power_flags;  // bitmask of all _power_flags ever set
-
-    adc_oneshot_unit_handle_t _adc_handle;
 
     struct pin_info {
-        uint8_t channel;
+        uint8_t channel;  // adc1 pin offset
         float scaling;
         uint8_t ardupin; // eg 3 , as typed into an ardupilot parameter
     };
 
     static const pin_info pin_config[];
-
 };
 
 }
