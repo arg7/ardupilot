@@ -54,9 +54,7 @@ private:
     //human readable Pin number used in ardu params
     int16_t _ardupin;
     //scaling from ADC count to Volts
-    int16_t _scaler;
-    //ADC handle
-    adc_oneshot_unit_handle_t _adc_handle;
+    float _scaler;
     adc_cali_handle_t _adc_cali_handle;
 
     //Current computed value (average)
